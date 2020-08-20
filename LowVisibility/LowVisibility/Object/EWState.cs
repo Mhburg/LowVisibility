@@ -110,8 +110,8 @@ namespace LowVisibility.Object {
             this.actor = actor;
 
             // Pilot effects; cache and only read once
-            if (actor.StatCollection.ContainsStatistic(ModStats.TacticsMod)) {
-                tacticsMod = actor.StatCollection.GetStatistic(ModStats.TacticsMod).Value<int>();
+            if (actor.StatCollection.GetStatistic(ModStats.TacticsMod) is Statistic tacticsmodStatistic) {
+                tacticsMod = tacticsmodStatistic.Value<int>();
                 if (tacticsMod == 0 && actor.GetPilot() != null) {
                     tacticsMod = SkillUtils.GetTacticsModifier(actor.GetPilot());
                     actor.StatCollection.Set<int>(ModStats.TacticsMod, tacticsMod);
@@ -119,159 +119,170 @@ namespace LowVisibility.Object {
             }
 
             // Ephemeral round check
-            ewCheck = actor.StatCollection.ContainsStatistic(ModStats.CurrentRoundEWCheck) ?
-                actor.StatCollection.GetStatistic(ModStats.CurrentRoundEWCheck).Value<int>() : 0;
+            if (actor.StatCollection.GetStatistic(ModStats.CurrentRoundEWCheck) is Statistic ewCheckStatistic) {
+                ewCheck = ewCheckStatistic.Value<int>();
+            }
 
             // ECM
-            jammedByECMMod = actor.StatCollection.ContainsStatistic(ModStats.ECMJamming) ?
-                actor.StatCollection.GetStatistic(ModStats.ECMJamming).Value<int>() : 0;
-            shieldedByECMMod = actor.StatCollection.ContainsStatistic(ModStats.ECMShield) ?
-                actor.StatCollection.GetStatistic(ModStats.ECMShield).Value<int>() : 0;
+            if (actor.StatCollection.GetStatistic(ModStats.ECMJamming) is Statistic ecmJammingStatistic) {
+                jammedByECMMod = ecmJammingStatistic.Value<int>();
+            }
+
+            if (actor.StatCollection.GetStatistic(ModStats.ECMShield) is Statistic ecmShieldStatistic) {
+                shieldedByECMMod = ecmShieldStatistic.Value<int>();
+            }
 
             // Sensors
-            advSensorsCarrierMod = actor.StatCollection.ContainsStatistic(ModStats.AdvancedSensors) ?
-                actor.StatCollection.GetStatistic(ModStats.AdvancedSensors).Value<int>() : 0;
+            if (actor.StatCollection.GetStatistic(ModStats.AdvancedSensors) is Statistic advancedSensorsStatistic) {
+                advSensorsCarrierMod = advancedSensorsStatistic.Value<int>();
+            }
 
             // Probes
-            probeCarrierMod = actor.StatCollection.ContainsStatistic(ModStats.ProbeCarrier) ?
-                actor.StatCollection.GetStatistic(ModStats.ProbeCarrier).Value<int>() : 0;
-            pingedByProbeMod = actor.StatCollection.ContainsStatistic(ModStats.PingedByProbe) ?
-                actor.StatCollection.GetStatistic(ModStats.PingedByProbe).Value<int>() : 0;
+            if (actor.StatCollection.GetStatistic(ModStats.ProbeCarrier) is Statistic probeCarrierStatistic) {
+                probeCarrierMod = probeCarrierStatistic.Value<int>();
+            }
+
+            if (actor.StatCollection.GetStatistic(ModStats.PingedByProbe) is Statistic pingedByProbedStatistic) {
+                pingedByProbeMod = pingedByProbedStatistic.Value<int>();
+            }
 
             // Stealth - <signature_modifier>_<details_modifier>_<mediumAttackMod>_<longAttackmod>_<extremeAttackMod>
-            if (actor.StatCollection.ContainsStatistic(ModStats.StealthEffect) &&
-                actor.StatCollection.GetStatistic(ModStats.StealthEffect).Value<string>() != "") {
-                string rawValue = actor.StatCollection.GetStatistic(ModStats.StealthEffect).Value<string>();
-                string[] tokens = rawValue.Split('_');
-                if (tokens.Length == 5) {
-                    try {
-                        stealth = new Stealth {
-                            SignatureMulti = float.Parse(tokens[0]),
-                            DetailsMod = Int32.Parse(tokens[1]),
-                            MediumRangeAttackMod = Int32.Parse(tokens[2]),
-                            LongRangeAttackMod = Int32.Parse(tokens[3]),
-                            ExtremeRangeAttackMod = Int32.Parse(tokens[4])
-                        };
-                    } catch (Exception) {
-                        Mod.Log.Info($"Failed to tokenize StealthEffect value: ({rawValue}). Discarding!");
-                        stealth = null;
+            if (actor.StatCollection.GetStatistic(ModStats.StealthEffect) is Statistic stealthEffectStatistic) {
+                string rawValue = stealthEffectStatistic.Value<string>();
+                if (!string.IsNullOrEmpty(rawValue)) {
+                    string[] tokens = rawValue.Split('_');
+                    if (tokens.Length == 5) {
+                        try {
+                            stealth = new Stealth {
+                                SignatureMulti = float.Parse(tokens[0]),
+                                DetailsMod = Int32.Parse(tokens[1]),
+                                MediumRangeAttackMod = Int32.Parse(tokens[2]),
+                                LongRangeAttackMod = Int32.Parse(tokens[3]),
+                                ExtremeRangeAttackMod = Int32.Parse(tokens[4])
+                            };
+                        } catch (Exception) {
+                            Mod.Log.Info($"Failed to tokenize StealthEffect value: ({rawValue}). Discarding!");
+                            stealth = null;
+                        }
+                    } else {
+                        Mod.Log.Info($"WARNING: Invalid StealthEffect value: ({rawValue}) found. Discarding!");
                     }
-                } else {
-                    Mod.Log.Info($"WARNING: Invalid StealthEffect value: ({rawValue}) found. Discarding!");
                 }
             }
-            
+
             // Mimetic - <initialVisibility>_<initialModifier>_<stepsUntilDecay>
-            if (actor.StatCollection.ContainsStatistic(ModStats.MimeticEffect) &&
-                actor.StatCollection.GetStatistic(ModStats.MimeticEffect).Value<string>() != "") {
-                string rawValue = actor.StatCollection.GetStatistic(ModStats.MimeticEffect).Value<string>();
-                string[] tokens = rawValue.Split('_');
-                if (tokens.Length == 3) {
-                    try {
-                        mimetic = new Mimetic {
-                            VisibilityMulti = float.Parse(tokens[0]),
-                            AttackMod = Int32.Parse(tokens[1]),
-                            HexesUntilDecay = Int32.Parse(tokens[2]),
-                        };
-                    } catch (Exception) {
-                        Mod.Log.Info($"Failed to tokenize Mimetic value: ({rawValue}). Discarding!");
-                        mimetic = null;
+            if (actor.StatCollection.GetStatistic(ModStats.MimeticEffect) is Statistic mimeticEffectStatistic) {
+                string rawValue = mimeticEffectStatistic.Value<string>();
+                if (!string.IsNullOrEmpty(rawValue)) {
+                    string[] tokens = rawValue.Split('_');
+                    if (tokens.Length == 3) {
+                        try {
+                            mimetic = new Mimetic {
+                                VisibilityMulti = float.Parse(tokens[0]),
+                                AttackMod = Int32.Parse(tokens[1]),
+                                HexesUntilDecay = Int32.Parse(tokens[2]),
+                            };
+                        } catch (Exception) {
+                            Mod.Log.Info($"Failed to tokenize Mimetic value: ({rawValue}). Discarding!");
+                            mimetic = null;
+                        }
+                    } else {
+                        Mod.Log.Info($"WARNING: Invalid Mimetic value: ({rawValue}) found. Discarding!");
                     }
-                } else {
-                    Mod.Log.Info($"WARNING: Invalid Mimetic value: ({rawValue}) found. Discarding!");
                 }
             }
 
             // ZoomVision - <initialAttackModifier>_<attackModifierCap>_<hexesUntilDecay>
-            if (actor.StatCollection.ContainsStatistic(ModStats.ZoomVision) &&
-                actor.StatCollection.GetStatistic(ModStats.ZoomVision).Value<string>() != "") {
-                string rawValue = actor.StatCollection.GetStatistic(ModStats.ZoomVision).Value<string>();
-                string[] tokens = rawValue.Split('_');
-                if (tokens.Length == 3) {
-                    try {
-                        zoomVision = new ZoomVision(Int32.Parse(tokens[0]), Int32.Parse(tokens[1]), Int32.Parse(tokens[2]));
-                    } catch (Exception) {
-                        Mod.Log.Info($"Failed to tokenize ZoomVision value: ({rawValue}). Discarding!");
-                        zoomVision = null;
+            if (actor.StatCollection.GetStatistic(ModStats.ZoomVision) is Statistic zoomVisionStatistic) {
+                string rawValue = zoomVisionStatistic.Value<string>();
+                if (!string.IsNullOrEmpty(rawValue)) {
+                    string[] tokens = rawValue.Split('_');
+                    if (tokens.Length == 3) {
+                        try {
+                            zoomVision = new ZoomVision(Int32.Parse(tokens[0]), Int32.Parse(tokens[1]), Int32.Parse(tokens[2]));
+                        } catch (Exception) {
+                            Mod.Log.Info($"Failed to tokenize ZoomVision value: ({rawValue}). Discarding!");
+                            zoomVision = null;
+                        }
+                    } else {
+                        Mod.Log.Info($"WARNING: Invalid ZoomVision value: ({rawValue}) found. Discarding!");
                     }
-                } else {
-                    Mod.Log.Info($"WARNING: Invalid ZoomVision value: ({rawValue}) found. Discarding!");
                 }
             }
 
             // HeatVision - <initialAttackModifier>_<heatDivisorForStep>__<maximumRange>
-            if (actor.StatCollection.ContainsStatistic(ModStats.HeatVision) &&
-                actor.StatCollection.GetStatistic(ModStats.HeatVision).Value<string>() != "") {
-                string rawValue = actor.StatCollection.GetStatistic(ModStats.HeatVision).Value<string>();
-                string[] tokens = rawValue.Split('_');
-                if (tokens.Length == 3) {
-                    try {
-                        heatVision = new HeatVision {
-                            AttackMod = Int32.Parse(tokens[0]),
-                            HeatDivisor = float.Parse(tokens[1]),
-                            MaximumRange = Int32.Parse(tokens[2])
-                        };
-                    } catch (Exception) {
-                        Mod.Log.Info($"Failed to tokenize HeatVision value: ({rawValue}). Discarding!");
-                        heatVision = null;
+            if (actor.StatCollection.GetStatistic(ModStats.HeatVision) is Statistic heatVisionStatistic) {
+                string rawValue = heatVisionStatistic.Value<string>();
+                if (!string.IsNullOrEmpty(rawValue)) {
+                    string[] tokens = rawValue.Split('_');
+                    if (tokens.Length == 3) {
+                        try {
+                            heatVision = new HeatVision {
+                                AttackMod = Int32.Parse(tokens[0]),
+                                HeatDivisor = float.Parse(tokens[1]),
+                                MaximumRange = Int32.Parse(tokens[2])
+                            };
+                        } catch (Exception) {
+                            Mod.Log.Info($"Failed to tokenize HeatVision value: ({rawValue}). Discarding!");
+                            heatVision = null;
+                        }
+                    } else {
+                        Mod.Log.Info($"WARNING: Invalid HeatVision value: ({rawValue}) found. Discarding!");
                     }
-                } else {
-                    Mod.Log.Info($"WARNING: Invalid HeatVision value: ({rawValue}) found. Discarding!");
                 }
             }
+
 
             // Narc effect - <signatureMod>_<detailsMod>_<attackMod>
-            if (actor.StatCollection.ContainsStatistic(ModStats.NarcEffect) &&
-                actor.StatCollection.GetStatistic(ModStats.NarcEffect).Value<string>() != "") {
-                string rawValue = actor.StatCollection.GetStatistic(ModStats.NarcEffect).Value<string>();
-                string[] tokens = rawValue.Split('_');
-                if (tokens.Length == 3) {
-                    try {
-                        narcEffect = new NarcEffect {
-                            SignatureMod = float.Parse(tokens[0]),
-                            DetailsMod = Int32.Parse(tokens[1]),
-                            AttackMod = Int32.Parse(tokens[2]), 
-                        };
-                    } catch (Exception) {
-                        Mod.Log.Info($"Failed to tokenize NarcEffect value: ({rawValue}). Discarding!");
-                        stealth = null;
+            if (actor.StatCollection.GetStatistic(ModStats.HeatVision) is Statistic narcEffectStatistic) {
+                string rawValue = narcEffectStatistic.Value<string>();
+                if (!string.IsNullOrEmpty(rawValue)) { 
+                    string[] tokens = rawValue.Split('_');
+                    if (tokens.Length == 3) {
+                        try {
+                            narcEffect = new NarcEffect {
+                                SignatureMod = float.Parse(tokens[0]),
+                                DetailsMod = Int32.Parse(tokens[1]),
+                                AttackMod = Int32.Parse(tokens[2]), 
+                            };
+                        } catch (Exception) {
+                            Mod.Log.Info($"Failed to tokenize NarcEffect value: ({rawValue}). Discarding!");
+                            stealth = null;
+                        }
+                    } else {
+                        Mod.Log.Info($"WARNING: Invalid NarcEffect value: ({rawValue}) found. Discarding!");
                     }
-                } else {
-                    Mod.Log.Info($"WARNING: Invalid NarcEffect value: ({rawValue}) found. Discarding!");
                 }
             }
 
+
             // Tag effect - <signatureMod>_<detailsMod>_<attackMod>
-            if (actor.StatCollection.ContainsStatistic(ModStats.TagEffect) &&
-                actor.StatCollection.GetStatistic(ModStats.TagEffect).Value<string>() != "") {
-                string rawValue = actor.StatCollection.GetStatistic(ModStats.TagEffect).Value<string>();
-                string[] tokens = rawValue.Split('_');
-                if (tokens.Length == 3) {
-                    try {
-                        tagEffect = new TagEffect {
-                            SignatureMod = float.Parse(tokens[0]),
-                            DetailsMod = Int32.Parse(tokens[1]),
-                            AttackMod = Int32.Parse(tokens[2]),
-                        };
-                    } catch (Exception) {
-                        Mod.Log.Info($"Failed to tokenize TagEffect value: ({rawValue}). Discarding!");
-                        stealth = null;
+            if (actor.StatCollection.GetStatistic(ModStats.TagEffect) is Statistic tagEffectStatistic) {
+                string rawValue = tagEffectStatistic.Value<string>();
+                if (!string.IsNullOrEmpty(rawValue)) {
+                    string[] tokens = rawValue.Split('_');
+                    if (tokens.Length == 3) {
+                        try {
+                            tagEffect = new TagEffect {
+                                SignatureMod = float.Parse(tokens[0]),
+                                DetailsMod = Int32.Parse(tokens[1]),
+                                AttackMod = Int32.Parse(tokens[2]),
+                            };
+                        } catch (Exception) {
+                            Mod.Log.Info($"Failed to tokenize TagEffect value: ({rawValue}). Discarding!");
+                            stealth = null;
+                        }
+                    } else {
+                        Mod.Log.Info($"WARNING: Invalid TagEffect value: ({rawValue}) found. Discarding!");
                     }
-                } else {
-                    Mod.Log.Info($"WARNING: Invalid TagEffect value: ({rawValue}) found. Discarding!");
                 }
             }
 
             // Vision Sharing
-            if (actor.StatCollection.ContainsStatistic(ModStats.SharesVision)) {
-                sharesVision = actor.StatCollection.GetValue<bool>(ModStats.SharesVision);
-            }
+            sharesVision = actor.StatCollection.GetValue<bool>(ModStats.SharesVision);
 
             // Night Vision
-            if (actor.StatCollection.ContainsStatistic(ModStats.NightVision)) {
-                nightVision = actor.StatCollection.GetValue<bool>(ModStats.NightVision);
-            }
-
+            nightVision = actor.StatCollection.GetValue<bool>(ModStats.NightVision);
         }
 
         public int GetCurrentEWCheck() { return ewCheck + tacticsMod; }
