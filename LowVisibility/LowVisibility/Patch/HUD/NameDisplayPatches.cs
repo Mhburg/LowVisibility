@@ -90,7 +90,7 @@ namespace LowVisibility.Patch {
             {
                 label = new Text($"{fullName}");
             }
-            Mod.Log.Debug()?.Invoke($"GetNonHostileMechDetectionLabel - label:({label}) fullName:({fullName})");
+            Mod.Log.Debug?.Write($"GetNonHostileMechDetectionLabel - label:({label}) fullName:({fullName})");
             return label;
         }
 
