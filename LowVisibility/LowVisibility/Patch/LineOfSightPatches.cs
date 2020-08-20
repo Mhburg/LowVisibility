@@ -222,7 +222,7 @@ namespace LowVisibility.Patch {
                 __result = LineOfFireLevel.LOFBlocked;
             }
 
-            Mod.Log.Trace()?.Invoke($"LOS:GLOFU LOS result is:{__result}");
+            Mod.Log.Trace($"LOS:GLOFU LOS result is:{__result}");
 
             return false;
         }
